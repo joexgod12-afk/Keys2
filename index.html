@@ -99,6 +99,29 @@
 
     <script>
         const AUTH_TOKEN = 'Xk9mP2vQ8nR4wL7jH3bF6cE1dA5gK0tY';
+        const LINKVERTISE_URL = 'https://direct-link.net/5207978/Zs3jXGFnFPWY';
+        
+        // Check if coming from Linkvertise
+        const referrer = document.referrer || '';
+        const fromLinkvertise = referrer.includes('linkvertise.com') || 
+                                referrer.includes('linkvertise') ||
+                                referrer.includes('direct-link.net') ||
+                                sessionStorage.getItem('fromLinkvertise') === 'true';
+        
+        // If not from Linkvertise, redirect there
+        if (!fromLinkvertise) {
+            // Check if we already have a valid key (they came back after getting key)
+            const storedKey = localStorage.getItem('lambv2_key');
+            const storedExpiry = localStorage.getItem('lambv2_expires');
+            const hasValidKey = storedKey && storedExpiry && new Date(storedExpiry) > new Date();
+            
+            // Only redirect if they don't have a valid key yet
+            if (!hasValidKey) {
+                // Mark that we're going to Linkvertise so we know they came back
+                sessionStorage.setItem('fromLinkvertise', 'true');
+                window.location.href = LINKVERTISE_URL;
+            }
+        }
         
         // Validate auth
         const urlParams = new URLSearchParams(window.location.search);
