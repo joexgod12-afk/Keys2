@@ -114,7 +114,8 @@
     </div>
 
     <script>
-        const API_URL = 'https://lambv2executor.42web.io/api.php';
+        // Using CORS proxy to bypass browser restrictions
+        const API_URL = 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://lambv2executor.42web.io/api.php');
         
         const urlParams = new URLSearchParams(window.location.search);
         const authToken = urlParams.get('auth');
@@ -162,8 +163,13 @@
             loading.style.display = 'block';
             
             try {
-                const response = await fetch(`${API_URL}?action=generate&auth=${authToken}&hwid=${HWID}`);
-                const data = await response.json();
+                // Call API through CORS proxy
+                const targetUrl = 'https://lambv2executor.42web.io/api.php?action=generate&auth=' + authToken + '&hwid=' + HWID;
+                const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl);
+                
+                const response = await fetch(proxyUrl);
+                const text = await response.text();
+                const data = JSON.parse(text);
                 
                 loading.style.display = 'none';
                 
@@ -188,7 +194,7 @@
                 loading.style.display = 'none';
                 btn.disabled = false;
                 btn.textContent = 'Get Access Key';
-                alert('Failed to generate key. Please try again.');
+                alert('Failed to generate key. Server may be busy. Please try again.');
                 console.error('Error:', e);
             }
         });
