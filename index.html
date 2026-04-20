@@ -49,25 +49,24 @@
             cursor: pointer;
             transition: all 0.3s;
             font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1px;
         }
         .btn:hover {
-            transform: scale(1.05);
+            transform: translateY(-2px);
             box-shadow: 0 10px 30px rgba(233, 69, 96, 0.4);
         }
         .btn:disabled {
-            background: #444;
+            background: #555;
             cursor: not-allowed;
             transform: none;
+            box-shadow: none;
         }
-        #keyDisplay {
-            display: none;
-            margin-top: 30px;
-            padding: 25px;
-            background: #0f3460;
+        .key-display {
+            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+            padding: 30px;
             border-radius: 15px;
+            margin: 20px 0;
             border: 2px solid #e94560;
+            display: none;
         }
         .key-label {
             color: #888;
@@ -76,62 +75,60 @@
             text-transform: uppercase;
             letter-spacing: 2px;
         }
-        #keyText {
+        .key-text {
+            font-family: 'Courier New', monospace;
             font-size: 24px;
             font-weight: bold;
-            color: #00d9ff;
+            color: #00d4ff;
+            text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
             letter-spacing: 3px;
-            word-break: break-all;
-            margin: 15px 0;
-            font-family: 'Courier New', monospace;
         }
         .copy-btn {
-            background: #00d9ff;
-            color: #1a1a2e;
+            background: #00d4ff;
+            color: #0f3460;
             border: none;
             padding: 12px 30px;
             border-radius: 8px;
             cursor: pointer;
-            font-weight: bold;
             margin-top: 15px;
+            font-weight: bold;
             transition: all 0.3s;
         }
         .copy-btn:hover {
-            transform: scale(1.05);
+            background: #00a8cc;
         }
-        .info {
-            font-size: 12px;
-            color: #666;
+        .expiry {
+            color: #ff9800;
+            font-size: 14px;
+            margin-top: 15px;
+        }
+        .note {
+            background: rgba(233, 69, 96, 0.1);
+            border-left: 4px solid #e94560;
+            padding: 15px;
             margin-top: 20px;
-        }
-        .info span {
-            color: #e94560;
+            text-align: left;
+            font-size: 14px;
+            border-radius: 0 8px 8px 0;
         }
         .loading {
             display: none;
-            margin-top: 20px;
+            color: #00d4ff;
+            font-size: 16px;
+            margin: 20px 0;
         }
         .spinner {
-            border: 3px solid #333;
-            border-top: 3px solid #e94560;
+            border: 3px solid rgba(0, 212, 255, 0.3);
+            border-top: 3px solid #00d4ff;
             border-radius: 50%;
             width: 40px;
             height: 40px;
             animation: spin 1s linear infinite;
-            margin: 0 auto;
+            margin: 0 auto 15px;
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
-        }
-        .note {
-            background: rgba(233, 69, 96, 0.1);
-            border-left: 3px solid #e94560;
-            padding: 15px;
-            margin-top: 20px;
-            border-radius: 0 8px 8px 0;
-            font-size: 13px;
-            color: #ccc;
         }
     </style>
 </head>
@@ -141,21 +138,18 @@
         <h1>LambV2 Executor</h1>
         <p class="subtitle">Premium Key System</p>
         
-        <button class="btn" id="getKeyBtn" onclick="startKeyProcess()">Get Access Key</button>
+        <button class="btn" id="getKeyBtn">Get Access Key</button>
         
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            <p style="margin-top: 15px; color: #888;">Generating secure key...</p>
+            <p>Generating your secure key...</p>
         </div>
         
-        <div id="keyDisplay">
-            <div class="key-label">Your Access Key</div>
-            <div id="keyText">...</div>
+        <div class="key-display" id="keyDisplay">
+            <p class="key-label">Your Access Key</p>
+            <p class="key-text" id="keyText"></p>
             <button class="copy-btn" onclick="copyKey()">📋 Copy to Clipboard</button>
-            <p class="info">
-                <span>⚡</span> Key expires in 24 hours<br>
-                <span>🔒</span> Single device only (HWID locked)
-            </p>
+            <p class="expiry" id="expiryText"></p>
         </div>
         
         <div class="note">
@@ -163,37 +157,26 @@
         </div>
     </div>
 
-    <!-- AES Encryption Library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
-    
     <script>
-        // Encryption key (must match C# key)
-        const ENCRYPTION_KEY = '4A7F3B9CE2158A6DF4215BC83E71A64D';
+        // Server API endpoint
+        const API_URL = 'https://omtggs1.infinityfree.com/api.php';
         
-        // Encrypt function
-        function encrypt(text) {
-            try {
-                const key = CryptoJS.enc.Hex.parse(ENCRYPTION_KEY);
-                const iv = CryptoJS.enc.Hex.parse('123456789ABCDEF01122334455667788');
-                const encrypted = CryptoJS.AES.encrypt(text, key, {
-                    iv: iv,
-                    mode: CryptoJS.mode.CBC,
-                    padding: CryptoJS.pad.Pkcs7
-                });
-                return encrypted.toString();
-            } catch(e) {
-                console.error('Encryption failed:', e);
-                return text;
-            }
+        // Get auth token from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const authToken = urlParams.get('auth');
+        
+        // Validate auth token
+        if (authToken !== 'Xk9mP2vQ8nR4wL7jH3bF6cE1dA5gK0tY') {
+            document.body.innerHTML = `
+                <div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#1a1a2e;color:white;font-family:sans-serif;">
+                    <div style="text-align:center;padding:40px;background:#16213e;border-radius:20px;">
+                        <h1 style="color:#e94560;margin-bottom:20px;">Access Denied</h1>
+                        <p>Please use the "Get Key" button in the executor.</p>
+                        <p style="color:#666;margin-top:20px;font-size:12px;">Unauthorized access attempt detected.</p>
+                    </div>
+                </div>
+            `;
         }
-        
-        // JSONBin credentials
-        const JSONBIN_KEY = '$2a$10$wHTadXrg7Ua.CeY5ws5ukeHhA5daGT3UMjT7oMmB6/IQSkmEGUGnu';
-        const BIN_ID = '69e57db5aaba882197189571';
-        
-        // Check if user already got a key (prevent multiple keys)
-        const storedKey = localStorage.getItem('lambv2_key');
-        const storedHwid = localStorage.getItem('lambv2_hwid');
         
         // Generate HWID (browser fingerprint)
         function generateHWID() {
@@ -206,178 +189,95 @@
                 screen.colorDepth,
                 new Date().getTimezoneOffset()
             ].join('|');
-            // Simple hash
             let hash = 0;
             for (let i = 0; i < hwid.length; i++) {
                 const char = hwid.charCodeAt(i);
                 hash = ((hash << 5) - hash) + char;
                 hash = hash & hash;
             }
-            return Math.abs(hash).toString(16).toUpperCase().substring(0, 16);
+            return Math.abs(hash).toString(16).toUpperCase().padStart(16, '0').substring(0, 16);
         }
         
         const HWID = generateHWID();
         
-        // Check auth token from URL (must come from Linkvertise)
-        const urlParams = new URLSearchParams(window.location.search);
-        const authToken = urlParams.get('auth');
+        // Get stored key
+        const storedKey = localStorage.getItem('lambv2_key');
+        const storedHwid = localStorage.getItem('lambv2_hwid');
         
-        // Validate - must have correct auth token
-        if (authToken !== 'Xk9mP2vQ8nR4wL7jH3bF6cE1dA5gK0tY') {
-            document.body.innerHTML = `
-                <div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#1a1a2e;color:white;font-family:sans-serif;">
-                    <div style="text-align:center;padding:40px;background:#16213e;border-radius:20px;">
-                        <h1 style="color:#e94560;margin-bottom:20px;">Access Denied</h1>
-                        <p>Please use the "Get Key" button in the executor.</p>
-                        <p style="color:#666;margin-top:20px;font-size:12px;">Unauthorized access attempt detected.</p>
-                    </div>
-                </div>
-            `;
-            throw new Error('Invalid auth token');
-        }
-        
-        // Check if already has key for this device
+        // If user already has a key for this device, show it
         if (storedKey && storedHwid === HWID) {
-            // Already has key for this device
-            window.onload = function() {
-                document.getElementById('getKeyBtn').style.display = 'none';
-                document.getElementById('keyDisplay').style.display = 'block';
-                document.getElementById('keyText').textContent = storedKey;
-                document.querySelector('.note').innerHTML = '<strong>Note:</strong> You already have a key for this device. Each device can only have one key.';
-            };
-        }
-        
-        function generateKey() {
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-            let key = '';
-            for (let i = 0; i < 16; i++) {
-                if (i > 0 && i % 4 === 0) key += '-';
-                key += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            return key;
-        }
-        
-        async function startKeyProcess() {
-            // Check if already has key
-            if (storedKey && storedHwid === HWID) {
-                alert('You already have a key for this device: ' + storedKey);
-                return;
-            }
-            
             const btn = document.getElementById('getKeyBtn');
+            const keyDisplay = document.getElementById('keyDisplay');
+            const keyText = document.getElementById('keyText');
+            const expiryText = document.getElementById('expiryText');
+            
+            btn.textContent = 'Key Already Generated!';
+            btn.disabled = true;
+            keyDisplay.style.display = 'block';
+            keyText.textContent = storedKey;
+            
+            const expiry = localStorage.getItem('lambv2_expires');
+            if (expiry) {
+                expiryText.innerHTML = '⚡ Key expires: ' + new Date(expiry).toLocaleString();
+            }
+        }
+        
+        // Generate key button
+        document.getElementById('getKeyBtn').addEventListener('click', async function() {
+            const btn = this;
             const loading = document.getElementById('loading');
             const keyDisplay = document.getElementById('keyDisplay');
+            const keyText = document.getElementById('keyText');
+            const expiryText = document.getElementById('expiryText');
             
             btn.disabled = true;
-            btn.textContent = 'Processing...';
+            btn.textContent = 'Generating...';
             loading.style.display = 'block';
             
-            const key = generateKey();
-            const expires = new Date();
-            expires.setHours(expires.getHours() + 24);
-            
-            // Save to JSONBin
-            const success = await saveKeyToDatabase(key, expires, HWID);
-            
-            if (success) {
-                // Store locally to prevent multiple keys
-                localStorage.setItem('lambv2_key', key);
-                localStorage.setItem('lambv2_hwid', HWID);
-                localStorage.setItem('lambv2_expires', expires.toISOString());
+            try {
+                // Call server API
+                const response = await fetch(`${API_URL}?action=generate&auth=${authToken}&hwid=${HWID}`);
+                const data = await response.json();
                 
-                // Show key
                 loading.style.display = 'none';
-                keyDisplay.style.display = 'block';
-                document.getElementById('keyText').textContent = key;
-                btn.textContent = 'Key Generated!';
-            } else {
+                
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                    btn.disabled = false;
+                    btn.textContent = 'Get Access Key';
+                    return;
+                }
+                
+                if (data.success) {
+                    // Store locally
+                    localStorage.setItem('lambv2_key', data.key);
+                    localStorage.setItem('lambv2_hwid', HWID);
+                    localStorage.setItem('lambv2_expires', data.expires);
+                    
+                    // Display key
+                    keyDisplay.style.display = 'block';
+                    keyText.textContent = data.key;
+                    expiryText.innerHTML = '⚡ Key expires: ' + new Date(data.expires).toLocaleString();
+                    
+                    btn.textContent = 'Key Generated!';
+                }
+            } catch (e) {
                 loading.style.display = 'none';
                 btn.disabled = false;
                 btn.textContent = 'Get Access Key';
                 alert('Failed to generate key. Please try again.');
+                console.error('Error:', e);
             }
-        }
+        });
         
-        async function saveKeyToDatabase(key, expires, hwid) {
-            try {
-                // Get current data
-                console.log('Fetching from JSONBin...', BIN_ID);
-                const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-                    method: 'GET',
-                    headers: { 'X-Master-Key': JSONBIN_KEY }
-                });
-                
-                console.log('GET response status:', response.status);
-                
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('GET error:', errorText);
-                    throw new Error('Failed to fetch: ' + response.status);
-                }
-                
-                const data = await response.json();
-                console.log('Got data:', data);
-                
-                // Ensure keys array exists
-                if (!data.record) {
-                    data.record = {};
-                }
-                if (!data.record.keys || !Array.isArray(data.record.keys)) {
-                    data.record.keys = [];
-                }
-                
-                // Check if this HWID already has a key
-                const existingKey = data.record.keys.find(k => k.hwid === hwid);
-                if (existingKey) {
-                    // Return existing key instead of creating new one
-                    return true; // Key already exists, will use stored local key
-                }
-                
-                // Encrypt the key before storing
-                const encryptedKey = encrypt(key);
-                
-                // Add new key
-                data.record.keys.push({
-                    key: encryptedKey,
-                    created: new Date().toISOString(),
-                    expires: expires.toISOString(),
-                    hwid: hwid,
-                    used: false
-                });
-                
-                // Save back
-                console.log('Saving to JSONBin...');
-                const updateResponse = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-                    method: 'PUT',
-                    headers: {
-                        'X-Master-Key': JSONBIN_KEY,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data.record)
-                });
-                
-                console.log('PUT response status:', updateResponse.status);
-                
-                if (!updateResponse.ok) {
-                    const errorText = await updateResponse.text();
-                    console.error('PUT error:', errorText);
-                }
-                
-                return updateResponse.ok;
-            } catch (e) {
-                console.error('Failed to save key:', e);
-                return false;
-            }
-        }
-        
+        // Copy to clipboard
         function copyKey() {
-            const key = document.getElementById('keyText').textContent;
-            navigator.clipboard.writeText(key).then(() => {
+            const keyText = document.getElementById('keyText').textContent;
+            navigator.clipboard.writeText(keyText).then(() => {
                 const btn = document.querySelector('.copy-btn');
-                const originalText = btn.textContent;
                 btn.textContent = '✅ Copied!';
                 setTimeout(() => {
-                    btn.textContent = originalText;
+                    btn.textContent = '📋 Copy to Clipboard';
                 }, 2000);
             });
         }
