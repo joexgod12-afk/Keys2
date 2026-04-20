@@ -3,11 +3,7 @@
 <head>
     <title>LambV2 Key System</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             color: white;
@@ -26,19 +22,9 @@
             max-width: 500px;
             width: 90%;
         }
-        .logo {
-            font-size: 48px;
-            margin-bottom: 20px;
-        }
-        h1 {
-            color: #e94560;
-            margin-bottom: 10px;
-            font-size: 28px;
-        }
-        .subtitle {
-            color: #888;
-            margin-bottom: 30px;
-        }
+        .logo { font-size: 48px; margin-bottom: 20px; }
+        h1 { color: #e94560; margin-bottom: 10px; font-size: 28px; }
+        .subtitle { color: #888; margin-bottom: 30px; }
         .btn {
             background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
             color: white;
@@ -50,16 +36,8 @@
             transition: all 0.3s;
             font-weight: bold;
         }
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(233, 69, 96, 0.4);
-        }
-        .btn:disabled {
-            background: #555;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(233, 69, 96, 0.4); }
+        .btn:disabled { background: #555; cursor: not-allowed; }
         .key-display {
             background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
             padding: 30px;
@@ -68,13 +46,7 @@
             border: 2px solid #e94560;
             display: none;
         }
-        .key-label {
-            color: #888;
-            font-size: 14px;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
+        .key-label { color: #888; font-size: 14px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px; }
         .key-text {
             font-family: 'Courier New', monospace;
             font-size: 24px;
@@ -92,16 +64,9 @@
             cursor: pointer;
             margin-top: 15px;
             font-weight: bold;
-            transition: all 0.3s;
         }
-        .copy-btn:hover {
-            background: #00a8cc;
-        }
-        .expiry {
-            color: #ff9800;
-            font-size: 14px;
-            margin-top: 15px;
-        }
+        .copy-btn:hover { background: #00a8cc; }
+        .expiry { color: #ff9800; font-size: 14px; margin-top: 15px; }
         .note {
             background: rgba(233, 69, 96, 0.1);
             border-left: 4px solid #e94560;
@@ -109,14 +74,8 @@
             margin-top: 20px;
             text-align: left;
             font-size: 14px;
-            border-radius: 0 8px 8px 0;
         }
-        .loading {
-            display: none;
-            color: #00d4ff;
-            font-size: 16px;
-            margin: 20px 0;
-        }
+        .loading { display: none; color: #00d4ff; font-size: 16px; margin: 20px 0; }
         .spinner {
             border: 3px solid rgba(0, 212, 255, 0.3);
             border-top: 3px solid #00d4ff;
@@ -126,10 +85,7 @@
             animation: spin 1s linear infinite;
             margin: 0 auto 15px;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -158,37 +114,19 @@
     </div>
 
     <script>
-        // Server API endpoint - CORRECTED
         const API_URL = 'https://lambv2executor.42web.io/api.php';
         
-        // Get auth token from URL
         const urlParams = new URLSearchParams(window.location.search);
         const authToken = urlParams.get('auth');
         
-        // Validate auth token
         if (authToken !== 'Xk9mP2vQ8nR4wL7jH3bF6cE1dA5gK0tY') {
-            document.body.innerHTML = `
-                <div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#1a1a2e;color:white;font-family:sans-serif;">
-                    <div style="text-align:center;padding:40px;background:#16213e;border-radius:20px;">
-                        <h1 style="color:#e94560;margin-bottom:20px;">Access Denied</h1>
-                        <p>Please use the "Get Key" button in the executor.</p>
-                        <p style="color:#666;margin-top:20px;font-size:12px;">Unauthorized access attempt detected.</p>
-                    </div>
-                </div>
-            `;
+            document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#1a1a2e;color:white;font-family:sans-serif;"><div style="text-align:center;padding:40px;background:#16213e;border-radius:20px;"><h1 style="color:#e94560;margin-bottom:20px;">Access Denied</h1><p>Please use the "Get Key" button in the executor.</p></div></div>';
         }
         
-        // Generate HWID (browser fingerprint)
         function generateHWID() {
             const nav = window.navigator;
             const screen = window.screen;
-            const hwid = [
-                nav.userAgent,
-                nav.language,
-                screen.width + 'x' + screen.height,
-                screen.colorDepth,
-                new Date().getTimezoneOffset()
-            ].join('|');
+            const hwid = [nav.userAgent, nav.language, screen.width + 'x' + screen.height, screen.colorDepth, new Date().getTimezoneOffset()].join('|');
             let hash = 0;
             for (let i = 0; i < hwid.length; i++) {
                 const char = hwid.charCodeAt(i);
@@ -200,29 +138,18 @@
         
         const HWID = generateHWID();
         
-        // Get stored key
         const storedKey = localStorage.getItem('lambv2_key');
         const storedHwid = localStorage.getItem('lambv2_hwid');
         
-        // If user already has a key for this device, show it
         if (storedKey && storedHwid === HWID) {
-            const btn = document.getElementById('getKeyBtn');
-            const keyDisplay = document.getElementById('keyDisplay');
-            const keyText = document.getElementById('keyText');
-            const expiryText = document.getElementById('expiryText');
-            
-            btn.textContent = 'Key Already Generated!';
-            btn.disabled = true;
-            keyDisplay.style.display = 'block';
-            keyText.textContent = storedKey;
-            
+            document.getElementById('getKeyBtn').textContent = 'Key Already Generated!';
+            document.getElementById('getKeyBtn').disabled = true;
+            document.getElementById('keyDisplay').style.display = 'block';
+            document.getElementById('keyText').textContent = storedKey;
             const expiry = localStorage.getItem('lambv2_expires');
-            if (expiry) {
-                expiryText.innerHTML = '⚡ Key expires: ' + new Date(expiry).toLocaleString();
-            }
+            if (expiry) document.getElementById('expiryText').innerHTML = '⚡ Key expires: ' + new Date(expiry).toLocaleString();
         }
         
-        // Generate key button
         document.getElementById('getKeyBtn').addEventListener('click', async function() {
             const btn = this;
             const loading = document.getElementById('loading');
@@ -235,7 +162,6 @@
             loading.style.display = 'block';
             
             try {
-                // Call server API
                 const response = await fetch(`${API_URL}?action=generate&auth=${authToken}&hwid=${HWID}`);
                 const data = await response.json();
                 
@@ -249,16 +175,13 @@
                 }
                 
                 if (data.success) {
-                    // Store locally
                     localStorage.setItem('lambv2_key', data.key);
                     localStorage.setItem('lambv2_hwid', HWID);
                     localStorage.setItem('lambv2_expires', data.expires);
                     
-                    // Display key
                     keyDisplay.style.display = 'block';
                     keyText.textContent = data.key;
                     expiryText.innerHTML = '⚡ Key expires: ' + new Date(data.expires).toLocaleString();
-                    
                     btn.textContent = 'Key Generated!';
                 }
             } catch (e) {
@@ -270,15 +193,12 @@
             }
         });
         
-        // Copy to clipboard
         function copyKey() {
             const keyText = document.getElementById('keyText').textContent;
             navigator.clipboard.writeText(keyText).then(() => {
                 const btn = document.querySelector('.copy-btn');
                 btn.textContent = '✅ Copied!';
-                setTimeout(() => {
-                    btn.textContent = '📋 Copy to Clipboard';
-                }, 2000);
+                setTimeout(() => btn.textContent = '📋 Copy to Clipboard', 2000);
             });
         }
     </script>
