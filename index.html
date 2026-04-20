@@ -1,211 +1,60 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>LambV2 Key System</title>
+    <title>Test API</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: white;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-        .container {
-            background: rgba(22, 33, 62, 0.95);
-            padding: 50px;
-            border-radius: 20px;
-            text-align: center;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-            max-width: 500px;
-            width: 90%;
-        }
-        .logo { font-size: 48px; margin-bottom: 20px; }
-        h1 { color: #e94560; margin-bottom: 10px; font-size: 28px; }
-        .subtitle { color: #888; margin-bottom: 30px; }
-        .btn {
-            background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
-            color: white;
-            border: none;
-            padding: 18px 50px;
-            font-size: 18px;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-weight: bold;
-        }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(233, 69, 96, 0.4); }
-        .btn:disabled { background: #555; cursor: not-allowed; }
-        .key-display {
-            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
-            padding: 30px;
-            border-radius: 15px;
-            margin: 20px 0;
-            border: 2px solid #e94560;
-            display: none;
-        }
-        .key-label { color: #888; font-size: 14px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px; }
-        .key-text {
-            font-family: 'Courier New', monospace;
-            font-size: 24px;
-            font-weight: bold;
-            color: #00d4ff;
-            text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
-            letter-spacing: 3px;
-        }
-        .copy-btn {
-            background: #00d4ff;
-            color: #0f3460;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 8px;
-            cursor: pointer;
-            margin-top: 15px;
-            font-weight: bold;
-        }
-        .copy-btn:hover { background: #00a8cc; }
-        .expiry { color: #ff9800; font-size: 14px; margin-top: 15px; }
-        .note {
-            background: rgba(233, 69, 96, 0.1);
-            border-left: 4px solid #e94560;
-            padding: 15px;
-            margin-top: 20px;
-            text-align: left;
-            font-size: 14px;
-        }
-        .loading { display: none; color: #00d4ff; font-size: 16px; margin: 20px 0; }
-        .spinner {
-            border: 3px solid rgba(0, 212, 255, 0.3);
-            border-top: 3px solid #00d4ff;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        body { background: #1a1a2e; color: white; font-family: sans-serif; padding: 50px; }
+        button { padding: 20px; font-size: 18px; cursor: pointer; }
+        #result { margin-top: 20px; padding: 20px; background: #333; border-radius: 10px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="logo">🔐</div>
-        <h1>LambV2 Executor</h1>
-        <p class="subtitle">Premium Key System</p>
-        
-        <button class="btn" id="getKeyBtn">Get Access Key</button>
-        
-        <div class="loading" id="loading">
-            <div class="spinner"></div>
-            <p>Generating your secure key...</p>
-        </div>
-        
-        <div class="key-display" id="keyDisplay">
-            <p class="key-label">Your Access Key</p>
-            <p class="key-text" id="keyText"></p>
-            <button class="copy-btn" onclick="copyKey()">📋 Copy to Clipboard</button>
-            <p class="expiry" id="expiryText"></p>
-        </div>
-        
-        <div class="note">
-            <strong>Note:</strong> Complete the verification process to receive your key. Each key is unique and tied to your device.
-        </div>
-    </div>
+    <h1>API Test</h1>
+    <button onclick="testDirect()">Test Direct (Will Fail)</button>
+    <button onclick="testProxy()">Test With Proxy</button>
+    <div id="result"></div>
 
     <script>
-        // Using CORS proxy to bypass browser restrictions
-        const API_URL = 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://lambv2executor.42web.io/api.php');
+        const authToken = 'Xk9mP2vQ8nR4wL7jH3bF6cE1dA5gK0tY';
+        const HWID = 'TEST1234567890AB';
+        const targetUrl = 'https://lambv2executor.42web.io/api.php?action=generate&auth=' + authToken + '&hwid=' + HWID;
         
-        const urlParams = new URLSearchParams(window.location.search);
-        const authToken = urlParams.get('auth');
-        
-        if (authToken !== 'Xk9mP2vQ8nR4wL7jH3bF6cE1dA5gK0tY') {
-            document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#1a1a2e;color:white;font-family:sans-serif;"><div style="text-align:center;padding:40px;background:#16213e;border-radius:20px;"><h1 style="color:#e94560;margin-bottom:20px;">Access Denied</h1><p>Please use the "Get Key" button in the executor.</p></div></div>';
+        function showResult(text) {
+            document.getElementById('result').innerHTML += '<p>' + text + '</p>';
         }
         
-        function generateHWID() {
-            const nav = window.navigator;
-            const screen = window.screen;
-            const hwid = [nav.userAgent, nav.language, screen.width + 'x' + screen.height, screen.colorDepth, new Date().getTimezoneOffset()].join('|');
-            let hash = 0;
-            for (let i = 0; i < hwid.length; i++) {
-                const char = hwid.charCodeAt(i);
-                hash = ((hash << 5) - hash) + char;
-                hash = hash & hash;
-            }
-            return Math.abs(hash).toString(16).toUpperCase().padStart(16, '0').substring(0, 16);
-        }
-        
-        const HWID = generateHWID();
-        
-        const storedKey = localStorage.getItem('lambv2_key');
-        const storedHwid = localStorage.getItem('lambv2_hwid');
-        
-        if (storedKey && storedHwid === HWID) {
-            document.getElementById('getKeyBtn').textContent = 'Key Already Generated!';
-            document.getElementById('getKeyBtn').disabled = true;
-            document.getElementById('keyDisplay').style.display = 'block';
-            document.getElementById('keyText').textContent = storedKey;
-            const expiry = localStorage.getItem('lambv2_expires');
-            if (expiry) document.getElementById('expiryText').innerHTML = '⚡ Key expires: ' + new Date(expiry).toLocaleString();
-        }
-        
-        document.getElementById('getKeyBtn').addEventListener('click', async function() {
-            const btn = this;
-            const loading = document.getElementById('loading');
-            const keyDisplay = document.getElementById('keyDisplay');
-            const keyText = document.getElementById('keyText');
-            const expiryText = document.getElementById('expiryText');
-            
-            btn.disabled = true;
-            btn.textContent = 'Generating...';
-            loading.style.display = 'block';
-            
+        async function testDirect() {
+            showResult('Testing direct (expected to fail)...');
             try {
-                // Call API through CORS proxy
-                const targetUrl = 'https://lambv2executor.42web.io/api.php?action=generate&auth=' + authToken + '&hwid=' + HWID;
+                const response = await fetch(targetUrl);
+                const data = await response.text();
+                showResult('Direct: SUCCESS - ' + data);
+            } catch (e) {
+                showResult('Direct: FAILED - ' + e.message);
+            }
+        }
+        
+        async function testProxy() {
+            showResult('Testing with proxy...');
+            try {
                 const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl);
+                showResult('Proxy URL: ' + proxyUrl);
                 
                 const response = await fetch(proxyUrl);
+                showResult('Response status: ' + response.status);
+                
                 const text = await response.text();
-                const data = JSON.parse(text);
+                showResult('Response text: ' + text);
                 
-                loading.style.display = 'none';
-                
-                if (data.error) {
-                    alert('Error: ' + data.error);
-                    btn.disabled = false;
-                    btn.textContent = 'Get Access Key';
-                    return;
-                }
-                
-                if (data.success) {
-                    localStorage.setItem('lambv2_key', data.key);
-                    localStorage.setItem('lambv2_hwid', HWID);
-                    localStorage.setItem('lambv2_expires', data.expires);
-                    
-                    keyDisplay.style.display = 'block';
-                    keyText.textContent = data.key;
-                    expiryText.innerHTML = '⚡ Key expires: ' + new Date(data.expires).toLocaleString();
-                    btn.textContent = 'Key Generated!';
+                try {
+                    const data = JSON.parse(text);
+                    showResult('Parsed JSON: ' + JSON.stringify(data));
+                } catch (e) {
+                    showResult('JSON parse error: ' + e.message);
                 }
             } catch (e) {
-                loading.style.display = 'none';
-                btn.disabled = false;
-                btn.textContent = 'Get Access Key';
-                alert('Failed to generate key. Server may be busy. Please try again.');
-                console.error('Error:', e);
+                showResult('Proxy test FAILED: ' + e.message);
             }
-        });
-        
-        function copyKey() {
-            const keyText = document.getElementById('keyText').textContent;
-            navigator.clipboard.writeText(keyText).then(() => {
-                const btn = document.querySelector('.copy-btn');
-                btn.textContent = '✅ Copied!';
-                setTimeout(() => btn.textContent = '📋 Copy to Clipboard', 2000);
-            });
         }
     </script>
 </body>
