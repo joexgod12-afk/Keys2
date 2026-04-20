@@ -114,8 +114,9 @@
     </div>
 
     <script>
-        // Using corsproxy.io - most reliable free proxy
-        const API_URL = 'https://corsproxy.io/?';
+        // Using thingproxy - alternative CORS proxy
+        const PROXY_URL = 'https://thingproxy.freeboard.io/fetch/';
+        const API_BASE = 'https://lambv2executor.42web.io/api.php';
         
         const urlParams = new URLSearchParams(window.location.search);
         const authToken = urlParams.get('auth');
@@ -163,8 +164,8 @@
             loading.style.display = 'block';
             
             try {
-                const targetUrl = 'https://lambv2executor.42web.io/api.php?action=generate&auth=' + authToken + '&hwid=' + HWID;
-                const response = await fetch(API_URL + encodeURIComponent(targetUrl));
+                const fullUrl = API_BASE + '?action=generate&auth=' + authToken + '&hwid=' + HWID;
+                const response = await fetch(PROXY_URL + fullUrl);
                 const text = await response.text();
                 
                 loading.style.display = 'none';
@@ -190,7 +191,7 @@
                         btn.textContent = 'Key Generated!';
                     }
                 } catch (e) {
-                    alert('Server error. Please try again in a moment.');
+                    alert('Server response error. Please try again.');
                     btn.disabled = false;
                     btn.textContent = 'Get Access Key';
                 }
@@ -198,7 +199,7 @@
                 loading.style.display = 'none';
                 btn.disabled = false;
                 btn.textContent = 'Get Access Key';
-                alert('Connection failed. Please check your internet and try again.');
+                alert('Connection failed. Server may be busy. Please try again.');
             }
         });
         
