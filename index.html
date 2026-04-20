@@ -287,6 +287,14 @@
                 
                 const data = await response.json();
                 
+                // Ensure keys array exists
+                if (!data.record) {
+                    data.record = {};
+                }
+                if (!data.record.keys || !Array.isArray(data.record.keys)) {
+                    data.record.keys = [];
+                }
+                
                 // Check if this HWID already has a key
                 const existingKey = data.record.keys.find(k => k.hwid === hwid);
                 if (existingKey) {
