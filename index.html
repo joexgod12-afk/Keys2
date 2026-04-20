@@ -163,7 +163,30 @@
         </div>
     </div>
 
+    <!-- AES Encryption Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+    
     <script>
+        // Encryption key (must match C# key)
+        const ENCRYPTION_KEY = '4A7F3B9CE2158A6DF4215BC83E71A64D';
+        
+        // Encrypt function
+        function encrypt(text) {
+            try {
+                const key = CryptoJS.enc.Hex.parse(ENCRYPTION_KEY);
+                const iv = CryptoJS.enc.Hex.parse('123456789ABCDEF01122334455667788');
+                const encrypted = CryptoJS.AES.encrypt(text, key, {
+                    iv: iv,
+                    mode: CryptoJS.mode.CBC,
+                    padding: CryptoJS.pad.Pkcs7
+                });
+                return encrypted.toString();
+            } catch(e) {
+                console.error('Encryption failed:', e);
+                return text;
+            }
+        }
+        
         // JSONBin credentials
         const JSONBIN_KEY = '$2a$10$wHTadXrg7Ua.CeY5ws5ukeHhA5daGT3UMjT7oMmB6/IQSkmEGUGnu';
         const BIN_ID = '69e57db5aaba882197189571';
@@ -310,9 +333,12 @@
                     return true; // Key already exists, will use stored local key
                 }
                 
+                // Encrypt the key before storing
+                const encryptedKey = encrypt(key);
+                
                 // Add new key
                 data.record.keys.push({
-                    key: key,
+                    key: encryptedKey,
                     created: new Date().toISOString(),
                     expires: expires.toISOString(),
                     hwid: hwid,
