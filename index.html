@@ -4,14 +4,15 @@
     <title>Test API</title>
     <style>
         body { background: #1a1a2e; color: white; font-family: sans-serif; padding: 50px; }
-        button { padding: 20px; font-size: 18px; cursor: pointer; }
+        button { padding: 20px; font-size: 18px; cursor: pointer; margin: 10px; }
         #result { margin-top: 20px; padding: 20px; background: #333; border-radius: 10px; }
     </style>
 </head>
 <body>
-    <h1>API Test</h1>
-    <button onclick="testDirect()">Test Direct (Will Fail)</button>
-    <button onclick="testProxy()">Test With Proxy</button>
+    <h1>API Test - Try Different Proxies</h1>
+    <button onclick="testProxy1()">Test corsproxy.io</button>
+    <button onclick="testProxy2()">Test thingproxy</button>
+    <button onclick="testProxy3()">Test allorigins</button>
     <div id="result"></div>
 
     <script>
@@ -23,37 +24,39 @@
             document.getElementById('result').innerHTML += '<p>' + text + '</p>';
         }
         
-        async function testDirect() {
-            showResult('Testing direct (expected to fail)...');
+        async function testProxy1() {
+            showResult('<b>Testing corsproxy.io...</b>');
             try {
-                const response = await fetch(targetUrl);
-                const data = await response.text();
-                showResult('Direct: SUCCESS - ' + data);
+                const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(targetUrl);
+                const response = await fetch(proxyUrl);
+                const text = await response.text();
+                showResult('corsproxy.io: ' + text.substring(0, 100));
             } catch (e) {
-                showResult('Direct: FAILED - ' + e.message);
+                showResult('corsproxy.io FAILED: ' + e.message);
             }
         }
         
-        async function testProxy() {
-            showResult('Testing with proxy...');
+        async function testProxy2() {
+            showResult('<b>Testing thingproxy...</b>');
+            try {
+                const proxyUrl = 'https://thingproxy.freeboard.io/fetch/' + targetUrl;
+                const response = await fetch(proxyUrl);
+                const text = await response.text();
+                showResult('thingproxy: ' + text.substring(0, 100));
+            } catch (e) {
+                showResult('thingproxy FAILED: ' + e.message);
+            }
+        }
+        
+        async function testProxy3() {
+            showResult('<b>Testing allorigins...</b>');
             try {
                 const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl);
-                showResult('Proxy URL: ' + proxyUrl);
-                
                 const response = await fetch(proxyUrl);
-                showResult('Response status: ' + response.status);
-                
                 const text = await response.text();
-                showResult('Response text: ' + text);
-                
-                try {
-                    const data = JSON.parse(text);
-                    showResult('Parsed JSON: ' + JSON.stringify(data));
-                } catch (e) {
-                    showResult('JSON parse error: ' + e.message);
-                }
+                showResult('allorigins: ' + text.substring(0, 100));
             } catch (e) {
-                showResult('Proxy test FAILED: ' + e.message);
+                showResult('allorigins FAILED: ' + e.message);
             }
         }
     </script>
