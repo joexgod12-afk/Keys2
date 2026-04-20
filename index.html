@@ -167,7 +167,62 @@
         // JSONBin credentials
         const JSONBIN_KEY = '$2a$10$gH.Mj4PLJrkLr2rew4nCg.iCn3Cu2qAFkq1PFMSPyngGpouE1mrCS';
         const BIN_ID = '69e561b6856a6821894fe897';
-        const LINKVERTISE_ID = ''; // Add your Linkvertise ID here for monetization
+        
+        // Check if user already got a key (prevent multiple keys)
+        const storedKey = localStorage.getItem('lambv2_key');
+        const storedHwid = localStorage.getItem('lambv2_hwid');
+        
+        // Generate HWID (browser fingerprint)
+        function generateHWID() {
+            const nav = window.navigator;
+            const screen = window.screen;
+            const hwid = [
+                nav.userAgent,
+                nav.language,
+                screen.width + 'x' + screen.height,
+                screen.colorDepth,
+                new Date().getTimezoneOffset()
+            ].join('|');
+            // Simple hash
+            let hash = 0;
+            for (let i = 0; i < hwid.length; i++) {
+                const char = hwid.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            return Math.abs(hash).toString(16).toUpperCase().substring(0, 16);
+        }
+        
+        const HWID = generateHWID();
+        
+        // Check auth token from URL (must come from Linkvertise)
+        const urlParams = new URLSearchParams(window.location.search);
+        const authToken = urlParams.get('auth');
+        
+        // Validate - must have correct auth token
+        if (authToken !== 'Xk9mP2vQ8nR4wL7jH3bF6cE1dA5gK0tY') {
+            document.body.innerHTML = `
+                <div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#1a1a2e;color:white;font-family:sans-serif;">
+                    <div style="text-align:center;padding:40px;background:#16213e;border-radius:20px;">
+                        <h1 style="color:#e94560;margin-bottom:20px;">Access Denied</h1>
+                        <p>Please use the "Get Key" button in the executor.</p>
+                        <p style="color:#666;margin-top:20px;font-size:12px;">Unauthorized access attempt detected.</p>
+                    </div>
+                </div>
+            `;
+            throw new Error('Invalid auth token');
+        }
+        
+        // Check if already has key for this device
+        if (storedKey && storedHwid === HWID) {
+            // Already has key for this device
+            window.onload = function() {
+                document.getElementById('getKeyBtn').style.display = 'none';
+                document.getElementById('keyDisplay').style.display = 'block';
+                document.getElementById('keyText').textContent = storedKey;
+                document.querySelector('.note').innerHTML = '<strong>Note:</strong> You already have a key for this device. Each device can only have one key.';
+            };
+        }
         
         function generateKey() {
             const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -179,7 +234,13 @@
             return key;
         }
         
-        function startKeyProcess() {
+        async function startKeyProcess() {
+            // Check if already has key
+            if (storedKey && storedHwid === HWID) {
+                alert('You already have a key for this device: ' + storedKey);
+                return;
+            }
+            
             const btn = document.getElementById('getKeyBtn');
             const loading = document.getElementById('loading');
             const keyDisplay = document.getElementById('keyDisplay');
@@ -188,47 +249,62 @@
             btn.textContent = 'Processing...';
             loading.style.display = 'block';
             
-            // Simulate verification delay (2 seconds)
-            setTimeout(() => {
-                const key = generateKey();
-                const expires = new Date();
-                expires.setHours(expires.getHours() + 24);
-                
-                // Save to JSONBin (in production)
-                saveKeyToDatabase(key, expires);
+            const key = generateKey();
+            const expires = new Date();
+            expires.setHours(expires.getHours() + 24);
+            
+            // Save to JSONBin
+            const success = await saveKeyToDatabase(key, expires, HWID);
+            
+            if (success) {
+                // Store locally to prevent multiple keys
+                localStorage.setItem('lambv2_key', key);
+                localStorage.setItem('lambv2_hwid', HWID);
+                localStorage.setItem('lambv2_expires', expires.toISOString());
                 
                 // Show key
                 loading.style.display = 'none';
                 keyDisplay.style.display = 'block';
                 document.getElementById('keyText').textContent = key;
                 btn.textContent = 'Key Generated!';
-            }, 2000);
+            } else {
+                loading.style.display = 'none';
+                btn.disabled = false;
+                btn.textContent = 'Get Access Key';
+                alert('Failed to generate key. Please try again.');
+            }
         }
         
-        async function saveKeyToDatabase(key, expires) {
-            // This would save to JSONBin in production
-            // For demo, we just log it
-            console.log('Key generated:', key);
-            console.log('Expires:', expires);
-            
-            // Uncomment this for actual JSONBin integration:
-            /*
+        async function saveKeyToDatabase(key, expires, hwid) {
             try {
+                // Get current data
                 const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
                     method: 'GET',
                     headers: { 'X-Access-Key': JSONBIN_KEY }
                 });
+                
+                if (!response.ok) throw new Error('Failed to fetch');
+                
                 const data = await response.json();
                 
+                // Check if this HWID already has a key
+                const existingKey = data.record.keys.find(k => k.hwid === hwid);
+                if (existingKey) {
+                    // Return existing key instead of creating new one
+                    return true; // Key already exists, will use stored local key
+                }
+                
+                // Add new key
                 data.record.keys.push({
                     key: key,
                     created: new Date().toISOString(),
                     expires: expires.toISOString(),
-                    hwid: null,
+                    hwid: hwid,
                     used: false
                 });
                 
-                await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+                // Save back
+                const updateResponse = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
                     method: 'PUT',
                     headers: {
                         'X-Access-Key': JSONBIN_KEY,
@@ -236,10 +312,12 @@
                     },
                     body: JSON.stringify(data.record)
                 });
+                
+                return updateResponse.ok;
             } catch (e) {
                 console.error('Failed to save key:', e);
+                return false;
             }
-            */
         }
         
         function copyKey() {
